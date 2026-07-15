@@ -26,6 +26,33 @@ A self-contained, **offline** study suite for the **Cisco CCNP ENCOR 350-401** e
 - `study-data.js` — **your content**: notes (`NOTES`) and glossary (`GLOSSARY`). Ships as demo placeholders here.
 - `study-data.sample.js` — the pristine placeholder content, kept as a reference/reset point.
 
+## Note-taking with Obsidian
+
+This hub renders from data in `study-data.js`, but the recommended way to *write* your study material is [Obsidian](https://obsidian.md) — a free, local-first Markdown editor. Keep a source `.md` note per subject, then mirror it into `study-data.js`. Because Obsidian stores everything as plain text files on your own disk, your notes stay portable and private.
+
+### Install Obsidian
+
+1. Download from [obsidian.md/download](https://obsidian.md/download) (macOS, Windows, Linux; mobile apps too).
+2. macOS: open the `.dmg` and drag **Obsidian** to Applications. Windows: run the installer.
+3. Launch Obsidian.
+
+### Create a vault
+
+1. On the start screen choose **Create new vault** (or **Open folder as vault** to reuse an existing folder).
+2. Name it (e.g. `CCNP Notes`) and pick a location. Obsidian adds a hidden `.obsidian/` config folder there.
+3. Optionally create topic folders inside it (e.g. `Network Switching/`, `Routing/`) to stay organized.
+
+### Taking notes
+
+1. New note: `Cmd/Ctrl+N` (or right-click a folder → **New note**).
+2. Write in Markdown — headings (`#`), lists (`-`), bold (`**text**`), and code fences (```) render live.
+3. Use `[[wikilinks]]` to connect notes and tags (`#stp`, `#ospf`) to group topics into a knowledge graph.
+4. Notes auto-save as `.md`; no export step needed.
+
+### From note to study hub
+
+Once a note is written, add a matching entry to `study-data.js` (below). It then appears as a card, flashcard batch, cheat-sheet content, and glossary source across every page.
+
 ## Make it yours
 
 1. Open `study-data.js`.
