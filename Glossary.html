@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CCNP Study Hub &middot; Glossary</title>
+<link rel="stylesheet" href="study.css" />
+</head>
+<body data-page="glossary">
+  <header class="site-header">
+    <div class="header-inner">
+      <span class="header-title">CCNP &middot; ENCOR 350-401</span>
+      <nav class="site-nav" aria-label="Study hub sections">
+        <a class="nav-link" href="CCNP-Study.html" data-page="notes">Notes</a>
+        <a class="nav-link" href="Flashcards.html" data-page="flashcards">Flashcards</a>
+        <a class="nav-link" href="Cheat-Sheet.html" data-page="cheatsheet">Cheat Sheet</a>
+        <a class="nav-link" href="Glossary.html" data-page="glossary">Glossary</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle color theme" title="Toggle theme">&#9789;</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-eyebrow">Reference</div>
+      <h1>Glossary</h1>
+      <p id="glossIntro">Every acronym and term from your notes, indexed A&ndash;Z across all exam domains. Search or jump by letter.</p>
+    </section>
+
+    <div class="gloss-toolbar">
+      <div class="search-wrap">
+        <input type="search" id="glossSearch" class="search-input" placeholder="Search terms, acronyms, definitions&hellip;" aria-label="Search glossary" autocomplete="off" />
+      </div>
+      <div class="fc-filters" id="glossFilters" style="margin-bottom:0;">
+        <div class="fc-filter-group" id="glossDomainFilter" role="group" aria-label="Filter by domain">
+          <span class="fc-filter-label">Domain</span>
+        </div>
+      </div>
+      <div class="az-bar" id="azBar" role="group" aria-label="Jump to letter"></div>
+    </div>
+
+    <div id="glossIndex"></div>
+    <div class="gloss-empty" id="glossEmpty">No terms match your search.</div>
+
+    <footer class="site-footer">
+      <p>The glossary is compiled from every note's key terms. Add a note's terms to <code>GLOSSARY</code> and they slot in here automatically.</p>
+    </footer>
+  </main>
+
+  <script src="study-config.js"></script>
+  <script src="study-data.js"></script>
+  <script src="study-common.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var CONFIG = window.STUDY_CONFIG || {};
+      var DATA = window.STUDY_DATA || {};
+      var DOMAINS = CONFIG.DOMAINS || {};
+      var ORDER = CONFIG.DOMAIN_ORDER || Object.keys(DOMAINS);
+      var GLOSSARY = (DATA.GLOSSARY || []).slice();
+
+      // Alphabetical, case-insensitive by term.
+      GLOSSARY.sort(function (a, b) {
+        return a.term.toLowerCase().localeCompare(b.term.toLowerCase());
+      });
+
+      function letterOf(term) {
+        var c = term.charAt(0).toUpperCase();
+        return /[A-Z]/.test(c) ? c : "#";
+      }
+      function letterKey(letter) {
+        return letter === "#" ? "NUM" : letter;
+      }
+
+      var els = {
+        index: document.getElementById("glossIndex"),
+        azBar: document.getElementById("azBar"),
+        search: document.getElementById("glossSearch"),
+        empty: document.getElementById("glossEmpty"),
+        intro: document.getElementById("glossIntro"),
+        domainFilter: document.getElementById("glossDomainFilter")
+      };
+
+      var activeDomain = null;
+      var query = "";
+
+      function domBadges(domains) {
+        return (domains || []).map(function (d) {
+          d = String(d);
+          var name = DOMAINS[d] ? DOMAINS[d].name : d;
+          return '<span class="obj-badge d' + (DOMAINS[d] ? DOMAINS[d].color : 1) + '">' + name + "</span>";
+        }).join("");
+      }
+
+      // Bucket entries by first letter.
+      var buckets = {};    // letter -> [entries]
+      var presentLetters = {};
+      GLOSSARY.forEach(function (e) {
+        var L = letterOf(e.term);
+        (buckets[L] = buckets[L] || []).push(e);
+        presentLetters[L] = true;
+      });
+
+      var LETTER_ORDER = ["#"].concat("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""));
+
+      /* ---- Render groups + A-Z bar --------------------------- */
+      var groupEls = {};   // letter -> group element
+      (function render() {
+        LETTER_ORDER.forEach(function (L) {
+          if (!buckets[L]) return;
+          var key = letterKey(L);
+
+          var group = document.createElement("section");
+          group.className = "gloss-group";
+          group.id = "gl-" + key;
+          group.setAttribute("data-letter", L);
+
+          var heading = document.createElement("div");
+          heading.className = "gloss-letter";
+          heading.textContent = L;
+          group.appendChild(heading);
+
+          var grid = document.createElement("div");
+          grid.className = "gloss-grid";
+
+          buckets[L].forEach(function (e) {
+            var accent = (e.domains && e.domains[0]) || 1;
+            var item = document.createElement("div");
+            item.className = "gloss-item d" + accent;
+            item.setAttribute("data-domains", (e.domains || []).map(String).join(" "));
+            item.setAttribute("data-search", (e.term + " " + (e.expansion || "") + " " + e.def).toLowerCase());
+            item.innerHTML =
+              '<div class="gloss-term">' + e.term + "</div>" +
+              (e.expansion ? '<div class="gloss-exp">' + e.expansion + "</div>" : "") +
+              '<div class="gloss-def">' + e.def + "</div>" +
+              (e.domains && e.domains.length ? '<div class="gloss-badges">' + domBadges(e.domains) + "</div>" : "");
+            grid.appendChild(item);
+          });
+
+          group.appendChild(grid);
+          els.index.appendChild(group);
+          groupEls[L] = group;
+        });
+
+        // A-Z bar (all letters; disabled if no entries)
+        LETTER_ORDER.forEach(function (L) {
+          var a = document.createElement("button");
+          a.type = "button";
+          a.className = "az-link" + (presentLetters[L] ? "" : " disabled");
+          a.textContent = L;
+          a.setAttribute("data-letter", L);
+          if (presentLetters[L]) {
+            a.addEventListener("click", function () {
+              var g = groupEls[L];
+              if (g && !g.classList.contains("hidden")) {
+                g.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            });
+          }
+          els.azBar.appendChild(a);
+        });
+      })();
+
+      /* ---- Domain filter ------------------------------------- */
+      var domainBtns = [];
+      (function buildDomainFilter() {
+        var present = {};
+        GLOSSARY.forEach(function (e) {
+          (e.domains || []).forEach(function (d) { present[String(d)] = true; });
+        });
+        ORDER.forEach(function (d) {
+          if (!present[d] || !DOMAINS[d]) return;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "fc-domain-btn d" + DOMAINS[d].color;
+          btn.setAttribute("data-domain", d);
+          btn.setAttribute("aria-pressed", "false");
+          btn.innerHTML = DOMAINS[d].name;
+          btn.addEventListener("click", function () {
+            activeDomain = activeDomain === d ? null : d;
+            applyFilters();
+          });
+          els.domainFilter.appendChild(btn);
+          domainBtns.push(btn);
+        });
+      })();
+
+      /* ---- Filtering ----------------------------------------- */
+      var azLinks = Array.prototype.slice.call(els.azBar.querySelectorAll(".az-link"));
+
+      function applyFilters() {
+        var totalVisible = 0;
+        LETTER_ORDER.forEach(function (L) {
+          var group = groupEls[L];
+          if (!group) return;
+          var items = group.querySelectorAll(".gloss-item");
+          var groupVisible = 0;
+          Array.prototype.forEach.call(items, function (item) {
+            var doms = (item.getAttribute("data-domains") || "").split(/\s+/).filter(Boolean);
+            var domainOk = !activeDomain || doms.indexOf(activeDomain) !== -1;
+            var searchOk = !query || (item.getAttribute("data-search") || "").indexOf(query) !== -1;
+            var show = domainOk && searchOk;
+            item.classList.toggle("hidden", !show);
+            if (show) { groupVisible++; totalVisible++; }
+          });
+          group.classList.toggle("hidden", groupVisible === 0);
+        });
+
+        azLinks.forEach(function (a) {
+          var L = a.getAttribute("data-letter");
+          var g = groupEls[L];
+          var enabled = g && !g.classList.contains("hidden");
+          a.classList.toggle("disabled", !enabled);
+        });
+
+        domainBtns.forEach(function (b) {
+          var on = b.getAttribute("data-domain") === activeDomain;
+          b.classList.toggle("active", on);
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+
+        els.empty.classList.toggle("show", totalVisible === 0);
+        if (els.intro) {
+          els.intro.textContent = totalVisible + " term" + (totalVisible === 1 ? "" : "s") +
+            " indexed A\u2013Z across all exam domains. Search or jump by letter.";
+        }
+      }
+
+      if (els.search) {
+        els.search.addEventListener("input", function () {
+          query = els.search.value.trim().toLowerCase();
+          applyFilters();
+        });
+      }
+
+      applyFilters();
+    })();
+  </script>
+</body>
+</html>

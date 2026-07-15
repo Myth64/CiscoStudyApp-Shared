@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CCNP Study Hub &middot; Cheat Sheet</title>
+<link rel="stylesheet" href="study.css" />
+</head>
+<body data-page="cheatsheet">
+  <header class="site-header">
+    <div class="header-inner">
+      <span class="header-title">CCNP &middot; ENCOR 350-401</span>
+      <nav class="site-nav" aria-label="Study hub sections">
+        <a class="nav-link" href="CCNP-Study.html" data-page="notes">Notes</a>
+        <a class="nav-link" href="Flashcards.html" data-page="flashcards">Flashcards</a>
+        <a class="nav-link" href="Cheat-Sheet.html" data-page="cheatsheet">Cheat Sheet</a>
+        <a class="nav-link" href="Glossary.html" data-page="glossary">Glossary</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle color theme" title="Toggle theme">&#9789;</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-eyebrow">Last-minute cram</div>
+      <h1>Cheat Sheet</h1>
+      <p>Every "gotcha" and CLI verification command from your notes, aggregated and grouped by exam domain. Filter by domain or topic to focus your review.</p>
+    </section>
+
+    <div class="fc-filters" id="cheatFilters">
+      <div class="fc-filter-group" id="cheatDomainFilter" role="group" aria-label="Filter by domain">
+        <span class="fc-filter-label">Domain</span>
+      </div>
+      <div class="fc-filter-group" id="cheatTopicFilter" role="group" aria-label="Filter by topic">
+        <span class="fc-filter-label">Topic</span>
+      </div>
+    </div>
+
+    <section class="cheat-block" aria-label="Common gotchas">
+      <div class="cheat-head">
+        <div class="cheat-title">&#9888;&#65039; Common Gotchas <span class="count" id="gotchaCount"></span></div>
+      </div>
+      <p class="cheat-sub" style="margin-bottom:18px;">Distractors and tricky wording the exam loves. If you can explain each of these, you're in good shape.</p>
+      <div class="gotcha-grid" id="gotchaGrid"></div>
+      <div class="cheat-empty" id="gotchaEmpty">No gotchas match this filter.</div>
+    </section>
+
+    <section class="cheat-block" aria-label="CLI verification">
+      <div class="cheat-head">
+        <div class="cheat-title">&gt;_ CLI Verification <span class="count" id="cliCount"></span></div>
+      </div>
+      <p class="cheat-sub" style="margin-bottom:18px;">Key <code>show</code> commands to verify each topic on real gear. Click any command to copy it.</p>
+      <div id="cliGroups"></div>
+      <div class="cheat-empty" id="cliEmpty">No commands match this filter.</div>
+    </section>
+
+    <footer class="site-footer">
+      <p>Gotchas are pulled from each note's Exam Focus (flagged items); CLI commands come from each note's verification list. Both grow as you add notes.</p>
+    </footer>
+  </main>
+
+  <script src="study-config.js"></script>
+  <script src="study-data.js"></script>
+  <script src="study-common.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var CONFIG = window.STUDY_CONFIG || {};
+      var DATA = window.STUDY_DATA || {};
+      var DOMAINS = CONFIG.DOMAINS || {};
+      var ORDER = CONFIG.DOMAIN_ORDER || Object.keys(DOMAINS);
+      var NOTES = DATA.NOTES || [];
+
+      // Aggregate gotchas + CLI, each carrying its note context.
+      var GOTCHAS = [];
+      var CLIS = [];
+      NOTES.forEach(function (note) {
+        var ctx = {
+          title: note.title,
+          topic: note.topic || "",
+          domains: (note.domains || []).map(String),
+          accent: (note.domains && note.domains[0]) || 1
+        };
+        (note.examFocus || []).forEach(function (f) {
+          if (f.gotcha) GOTCHAS.push({ text: f.text, ctx: ctx });
+        });
+        (note.cli || []).forEach(function (c) {
+          CLIS.push({ cmd: c.cmd, desc: c.desc, ctx: ctx });
+        });
+      });
+
+      // Sort both by primary domain so the page reads in exam order.
+      function byDomain(a, b) { return a.ctx.accent - b.ctx.accent; }
+      GOTCHAS.sort(byDomain);
+      CLIS.sort(byDomain);
+
+      var activeDomain = null;
+      var activeTopic = null;
+
+      var els = {
+        domainFilter: document.getElementById("cheatDomainFilter"),
+        topicFilter: document.getElementById("cheatTopicFilter"),
+        gotchaGrid: document.getElementById("gotchaGrid"),
+        gotchaCount: document.getElementById("gotchaCount"),
+        gotchaEmpty: document.getElementById("gotchaEmpty"),
+        cliGroups: document.getElementById("cliGroups"),
+        cliCount: document.getElementById("cliCount"),
+        cliEmpty: document.getElementById("cliEmpty")
+      };
+
+      function domBadges(domains) {
+        return domains.map(function (d) {
+          var name = DOMAINS[d] ? DOMAINS[d].name : d;
+          return '<span class="obj-badge d' + (DOMAINS[d] ? DOMAINS[d].color : 1) + '">' + name + "</span>";
+        }).join("");
+      }
+
+      /* ---- Render gotchas ------------------------------------ */
+      (function renderGotchas() {
+        GOTCHAS.forEach(function (g) {
+          var card = document.createElement("div");
+          card.className = "gotcha-card d" + g.ctx.accent;
+          card.setAttribute("data-domains", g.ctx.domains.join(" "));
+          card.setAttribute("data-topic", g.ctx.topic);
+          card.innerHTML =
+            '<div class="gotcha-text">' + g.text + "</div>" +
+            '<div class="gotcha-meta">' +
+              domBadges(g.ctx.domains) +
+              '<span class="gotcha-source">' + g.ctx.title + "</span>" +
+            "</div>";
+          els.gotchaGrid.appendChild(card);
+        });
+      })();
+
+      /* ---- Render CLI grouped by domain ---------------------- */
+      var cliGroupEls = [];
+      (function renderCli() {
+        ORDER.forEach(function (d) {
+          var items = CLIS.filter(function (c) { return String(c.ctx.accent) === d; });
+          if (!items.length || !DOMAINS[d]) return;
+
+          var group = document.createElement("div");
+          group.className = "cli-group";
+          group.setAttribute("data-domain", d);
+
+          var title = document.createElement("div");
+          title.className = "cli-group-title d" + DOMAINS[d].color;
+          title.innerHTML = DOMAINS[d].name;
+          group.appendChild(title);
+
+          var list = document.createElement("div");
+          list.className = "cli-list";
+
+          items.forEach(function (c) {
+            var row = document.createElement("div");
+            row.className = "cli-item d" + c.ctx.accent;
+            row.setAttribute("data-domains", c.ctx.domains.join(" "));
+            row.setAttribute("data-topic", c.ctx.topic);
+            row.innerHTML =
+              '<code class="cli-cmd" title="Click to copy">' + c.cmd + "</code>" +
+              '<span class="cli-desc">' + c.desc + "</span>" +
+              '<span class="cli-meta">' + c.ctx.title + "</span>";
+            list.appendChild(row);
+          });
+
+          group.appendChild(list);
+          els.cliGroups.appendChild(group);
+          cliGroupEls.push(group);
+        });
+      })();
+
+      /* ---- Click-to-copy on CLI commands --------------------- */
+      els.cliGroups.addEventListener("click", function (e) {
+        var code = e.target.closest(".cli-cmd");
+        if (!code) return;
+        var text = code.textContent;
+        function flash() {
+          code.classList.add("copied");
+          setTimeout(function () { code.classList.remove("copied"); }, 1200);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(flash, fallback);
+        } else {
+          fallback();
+        }
+        function fallback() {
+          try {
+            var ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            flash();
+          } catch (err) {}
+        }
+      });
+
+      /* ---- Filters ------------------------------------------- */
+      var domainBtns = [];
+      var topicBtns = [];
+
+      (function buildDomainFilter() {
+        var present = {};
+        GOTCHAS.concat(CLIS).forEach(function (x) {
+          x.ctx.domains.forEach(function (d) { present[d] = true; });
+        });
+        ORDER.forEach(function (d) {
+          if (!present[d] || !DOMAINS[d]) return;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "fc-domain-btn d" + DOMAINS[d].color;
+          btn.setAttribute("data-domain", d);
+          btn.setAttribute("aria-pressed", "false");
+          btn.innerHTML = DOMAINS[d].name;
+          btn.addEventListener("click", function () {
+            activeDomain = activeDomain === d ? null : d;
+            applyFilters();
+          });
+          els.domainFilter.appendChild(btn);
+          domainBtns.push(btn);
+        });
+      })();
+
+      (function buildTopicFilter() {
+        var counts = {};
+        var seen = [];
+        GOTCHAS.concat(CLIS).forEach(function (x) {
+          var t = x.ctx.topic;
+          if (!t) return;
+          if (counts[t] === undefined) { counts[t] = 0; seen.push(t); }
+          counts[t]++;
+        });
+        seen.forEach(function (t) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "topic-chip";
+          btn.setAttribute("data-topic", t);
+          btn.setAttribute("aria-pressed", "false");
+          btn.innerHTML = t + ' <span class="topic-count">' + counts[t] + "</span>";
+          btn.addEventListener("click", function () {
+            activeTopic = activeTopic === t ? null : t;
+            applyFilters();
+          });
+          els.topicFilter.appendChild(btn);
+          topicBtns.push(btn);
+        });
+      })();
+
+      function itemMatches(el) {
+        var doms = (el.getAttribute("data-domains") || "").split(/\s+/).filter(Boolean);
+        var t = el.getAttribute("data-topic") || "";
+        var domainOk = !activeDomain || doms.indexOf(activeDomain) !== -1;
+        var topicOk = !activeTopic || t === activeTopic;
+        return domainOk && topicOk;
+      }
+
+      function applyFilters() {
+        // Gotchas
+        var gVisible = 0;
+        Array.prototype.forEach.call(els.gotchaGrid.children, function (card) {
+          var show = itemMatches(card);
+          card.classList.toggle("hidden", !show);
+          if (show) gVisible++;
+        });
+        els.gotchaCount.textContent = gVisible;
+        els.gotchaEmpty.classList.toggle("show", gVisible === 0);
+
+        // CLI (hide empty groups)
+        var cVisible = 0;
+        cliGroupEls.forEach(function (group) {
+          var rows = group.querySelectorAll(".cli-item");
+          var groupVisible = 0;
+          Array.prototype.forEach.call(rows, function (row) {
+            var show = itemMatches(row);
+            row.classList.toggle("hidden", !show);
+            if (show) { groupVisible++; cVisible++; }
+          });
+          group.classList.toggle("hidden", groupVisible === 0);
+        });
+        els.cliCount.textContent = cVisible;
+        els.cliEmpty.classList.toggle("show", cVisible === 0);
+
+        domainBtns.forEach(function (b) {
+          var on = b.getAttribute("data-domain") === activeDomain;
+          b.classList.toggle("active", on);
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        topicBtns.forEach(function (b) {
+          var on = b.getAttribute("data-topic") === activeTopic;
+          b.classList.toggle("active", on);
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+
+      applyFilters();
+    })();
+  </script>
+</body>
+</html>

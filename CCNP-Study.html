@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CCNP Study Hub &middot; Notes</title>
+<link rel="stylesheet" href="study.css" />
+</head>
+<body data-page="notes">
+  <header class="site-header">
+    <div class="header-inner">
+      <span class="header-title">CCNP &middot; ENCOR 350-401</span>
+      <nav class="site-nav" aria-label="Study hub sections">
+        <a class="nav-link" href="CCNP-Study.html" data-page="notes">Notes</a>
+        <a class="nav-link" href="Flashcards.html" data-page="flashcards">Flashcards</a>
+        <a class="nav-link" href="Cheat-Sheet.html" data-page="cheatsheet">Cheat Sheet</a>
+        <a class="nav-link" href="Glossary.html" data-page="glossary">Glossary</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle color theme" title="Toggle theme">&#9789;</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-eyebrow">Implementing Cisco Enterprise Network Core Technologies</div>
+      <h1>CCNP &middot; ENCOR 350-401</h1>
+      <p>Exam-tailored study notes mapped to the ENCOR 350-401 v1.2 blueprint. The bar tracks the distinct exam objectives your notes cover.</p>
+      <div class="progress" aria-label="Exam study progress">
+        <div class="progress-top">
+          <span class="progress-label">Exam readiness (weighted)</span>
+          <span class="progress-pct" id="progressPct">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-sub" id="progressSub">0 of 47 exam sub-topics studied</div>
+      </div>
+    </section>
+
+    <section class="blueprint" aria-label="Exam blueprint">
+      <div class="blueprint-head">
+        <span class="blueprint-title">ENCOR 350-401 v1.2 &mdash; Exam Domains</span>
+        <div class="blueprint-meta-col">
+          <span class="blueprint-meta">120 Minute Exam &middot; CCNP &amp; CCIE Enterprise</span>
+          <div class="conf-filter" id="confFilter" role="group" aria-label="Filter by confidence">
+            <span class="conf-filter-label">Confidence</span>
+            <button type="button" class="conf-filter-btn low" data-conf="low" aria-pressed="false">Low</button>
+            <button type="button" class="conf-filter-btn med" data-conf="med" aria-pressed="false">Med</button>
+            <button type="button" class="conf-filter-btn high" data-conf="high" aria-pressed="false">High</button>
+          </div>
+        </div>
+      </div>
+      <p class="blueprint-sub">Each domain has its own color, echoed on the note badges below. Click a domain, topic, or confidence level to filter &mdash; combine them or use search to narrow down; click an active filter again to clear it.</p>
+      <div class="domain-grid" id="domainGrid"></div>
+      <div class="study-controls">
+        <div class="search-wrap">
+          <input type="search" id="searchInput" class="search-input" placeholder="Search notes by keyword (e.g. TCAM, FHRP, SD-WAN)&hellip;" aria-label="Search notes" autocomplete="off" />
+        </div>
+        <div class="topic-filter" id="topicFilter" role="group" aria-label="Filter by topic">
+          <span class="topic-filter-label">Topics</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card-grid" id="cardGrid"></section>
+
+    <div class="filter-empty" id="filterEmpty">
+      <div>No notes match this filter.</div>
+      <button type="button" id="clearFilter">Show all notes</button>
+    </div>
+
+    <footer class="site-footer">
+      <p>CCNP notes, tailored to the ENCOR 350-401 v1.2 exam blueprint. Objective codes reference the official Cisco topic list.</p>
+    </footer>
+  </main>
+
+  <div class="modal-overlay" id="cardModal" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="Note details">
+      <button type="button" class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    </div>
+  </div>
+
+  <script src="study-config.js"></script>
+  <script src="study-data.js"></script>
+  <script src="study-common.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var CONFIG = window.STUDY_CONFIG || {};
+      var DATA = window.STUDY_DATA || {};
+      var DOMAINS = CONFIG.DOMAINS || {};
+      var ORDER = CONFIG.DOMAIN_ORDER || Object.keys(DOMAINS);
+      var NOTES = (DATA.NOTES || []).slice();
+      var util = window.STUDY || {};
+
+      var stripHtml = util.stripHtml || function (h) {
+        var d = document.createElement("div");
+        d.innerHTML = h == null ? "" : String(h);
+        return (d.textContent || "").replace(/\s+/g, " ").trim();
+      };
+      var pad2 = util.pad2 || function (n) { return ("0" + n).slice(-2); };
+
+      /* ---- Render the exam-domain tiles from config ---------- */
+      (function renderDomains() {
+        var grid = document.getElementById("domainGrid");
+        if (!grid) return;
+        var html = "";
+        ORDER.forEach(function (d) {
+          var dom = DOMAINS[d];
+          if (!dom) return;
+          html +=
+            '<button type="button" class="domain d' + dom.color + '" data-domain="' + d + '" aria-pressed="false">' +
+              '<span class="domain-weight">' + dom.weight + '%</span>' +
+              '<span class="domain-name">' + dom.name + '</span>' +
+              '<span class="domain-count"></span>' +
+            "</button>";
+        });
+        grid.innerHTML = html;
+      })();
+
+      /* ---- Render note cards from data ----------------------- */
+      (function renderCards() {
+        var grid = document.getElementById("cardGrid");
+        if (!grid) return;
+
+        NOTES.forEach(function (note, i) {
+          var badges = (note.badges || []).map(function (b) {
+            return '<span class="obj-badge d' + b.domain + '">' + b.code + " &middot; " + b.label + "</span>";
+          }).join("");
+
+          var focus = (note.examFocus || []).map(function (f) {
+            return "<li" + (f.gotcha ? ' class="gotcha"' : "") + ">" + f.text + "</li>";
+          }).join("");
+
+          var chips = (note.takeaways || []).map(function (t) {
+            return '<span class="chip">' + t + "</span>";
+          }).join("");
+
+          var inner =
+            '<div class="confidence">' +
+              '<span class="confidence-label">Confidence</span>' +
+              '<div class="confidence-btns" role="group" aria-label="Confidence level">' +
+                '<button type="button" class="conf-btn low" data-level="low">Low</button>' +
+                '<button type="button" class="conf-btn med" data-level="med">Med</button>' +
+                '<button type="button" class="conf-btn high" data-level="high">High</button>' +
+              "</div>" +
+            "</div>" +
+            '<div class="card-index">Note ' + pad2(i + 1) + "</div>" +
+            "<h2>" + note.title + "</h2>" +
+            '<div class="obj-badges">' + badges + "</div>" +
+            '<div class="tldr">' +
+              '<span class="tldr-label">TL;DR</span>' +
+              '<span class="tldr-text">' + note.tldr + "</span>" +
+            "</div>" +
+            '<p class="summary">' + note.summary + "</p>" +
+            '<div class="exam-focus">' +
+              '<div class="exam-focus-label">&#127919; Exam Focus &mdash; what 350-401 tests</div>' +
+              "<ul>" + focus + "</ul>" +
+            "</div>" +
+            '<div class="takeaways-label">Key Takeaways</div>' +
+            '<div class="chips">' + chips + "</div>";
+
+          // Clean, searchable text drawn only from meaningful content
+          var searchParts = [note.title, note.topic, note.tldr, note.summary];
+          (note.badges || []).forEach(function (b) { searchParts.push(b.code + " " + b.label); });
+          (note.examFocus || []).forEach(function (f) { searchParts.push(f.text); });
+          (note.takeaways || []).forEach(function (t) { searchParts.push(t); });
+          var searchText = stripHtml(searchParts.join(" ")).toLowerCase();
+
+          var art = document.createElement("article");
+          art.className = "card collapsed";
+          art.setAttribute("data-domains", (note.domains || []).join(" "));
+          art.setAttribute("data-note", note.id);
+          art.setAttribute("data-topic", note.topic || "");
+          art.setAttribute("data-search", searchText);
+          art.innerHTML = inner;
+          grid.appendChild(art);
+        });
+      })();
+
+      /* ---- Exam readiness: weighted by domain, from data ----- */
+      (function progress() {
+        var leafSet = {};
+        var parentMap = {};
+        var totalLeaves = 0;
+        Object.keys(DOMAINS).forEach(function (d) {
+          DOMAINS[d].leaves.forEach(function (leaf) {
+            leafSet[leaf] = true;
+            totalLeaves++;
+            var parent = leaf.split(".").slice(0, 2).join(".");
+            (parentMap[parent] = parentMap[parent] || []).push(leaf);
+          });
+        });
+
+        var covered = {};
+        NOTES.forEach(function (note) {
+          (note.badges || []).forEach(function (b) {
+            var m = String(b.code).match(/\d+\.\d+(?:\.[a-z])?/);
+            if (!m) return;
+            var code = m[0];
+            if (leafSet[code]) {
+              covered[code] = true;
+            } else if (parentMap[code]) {
+              parentMap[code].forEach(function (leaf) { covered[leaf] = true; });
+            }
+          });
+        });
+
+        var weighted = 0;
+        Object.keys(DOMAINS).forEach(function (d) {
+          var leaves = DOMAINS[d].leaves;
+          var have = leaves.filter(function (l) { return covered[l]; }).length;
+          weighted += DOMAINS[d].weight * (have / leaves.length);
+        });
+
+        var pct = Math.min(100, Math.round(weighted));
+        var studied = Object.keys(covered).length;
+        var pctEl = document.getElementById("progressPct");
+        var subEl = document.getElementById("progressSub");
+        var fillEl = document.getElementById("progressFill");
+        if (pctEl) pctEl.textContent = pct + "%";
+        if (subEl) subEl.textContent = studied + " of " + totalLeaves + " objectives covered \u00b7 weighted by exam domain";
+        if (fillEl) {
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              fillEl.style.width = pct + "%";
+            });
+          });
+        }
+      })();
+
+      /* ---- Per-note confidence (Low / Med / High), saved ----- */
+      (function confidence() {
+        var STORE = "ns-confidence";
+        var saved = {};
+        try {
+          saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {};
+        } catch (e) {}
+
+        function persist() {
+          try {
+            localStorage.setItem(STORE, JSON.stringify(saved));
+          } catch (e) {}
+        }
+
+        var cards = document.querySelectorAll(".card[data-note]");
+        Array.prototype.forEach.call(cards, function (card) {
+          var id = card.getAttribute("data-note");
+          var btns = card.querySelectorAll(".conf-btn");
+
+          function render(level) {
+            if (level) {
+              card.setAttribute("data-confidence", level);
+            } else {
+              card.removeAttribute("data-confidence");
+            }
+            Array.prototype.forEach.call(btns, function (b) {
+              var on = b.getAttribute("data-level") === level;
+              b.classList.toggle("active", on);
+              b.setAttribute("aria-pressed", on ? "true" : "false");
+            });
+          }
+
+          render(saved[id] || null);
+
+          Array.prototype.forEach.call(btns, function (b) {
+            b.addEventListener("click", function () {
+              var level = b.getAttribute("data-level");
+              if (saved[id] === level) {
+                delete saved[id];
+                render(null);
+              } else {
+                saved[id] = level;
+                render(level);
+              }
+              persist();
+              document.dispatchEvent(new Event("cardconfidencechange"));
+            });
+          });
+        });
+      })();
+
+      /* ---- Note detail modal --------------------------------- */
+      (function modal() {
+        var cards = document.querySelectorAll(".card");
+        var overlay = document.getElementById("cardModal");
+        var dialog = overlay ? overlay.querySelector(".modal-dialog") : null;
+        var closeBtn = document.getElementById("modalClose");
+        if (!overlay || !dialog) return;
+
+        function clearClone() {
+          var existing = dialog.querySelector(".modal-card");
+          if (existing) existing.remove();
+        }
+
+        function openModal(card) {
+          clearClone();
+          var clone = card.cloneNode(true);
+          clone.classList.remove("collapsed", "hidden");
+          clone.classList.add("modal-card");
+          clone.removeAttribute("data-domains");
+          var conf = clone.querySelector(".confidence");
+          if (conf) conf.remove();
+          dialog.appendChild(clone);
+          clone.scrollTop = 0;
+
+          overlay.classList.add("open");
+          overlay.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        }
+
+        function closeModal() {
+          overlay.classList.remove("open");
+          overlay.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+          clearClone();
+        }
+
+        Array.prototype.forEach.call(cards, function (card) {
+          card.addEventListener("click", function (e) {
+            if (e.target.closest(".confidence")) return;
+            var sel = window.getSelection && window.getSelection().toString();
+            if (sel) return;
+            openModal(card);
+          });
+        });
+
+        overlay.addEventListener("click", function (e) {
+          if (e.target === overlay) closeModal();
+        });
+        if (closeBtn) closeBtn.addEventListener("click", closeModal);
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && overlay.classList.contains("open")) closeModal();
+        });
+      })();
+
+      /* ---- Topic chips + domain / topic / confidence / search filter ---- */
+      (function filters() {
+        var domains = Array.prototype.slice.call(document.querySelectorAll(".domain[data-domain]"));
+        var confBtns = Array.prototype.slice.call(document.querySelectorAll(".conf-filter-btn[data-conf]"));
+        var cards = Array.prototype.slice.call(document.querySelectorAll(".card[data-domains]"));
+        var emptyState = document.getElementById("filterEmpty");
+        var clearBtn = document.getElementById("clearFilter");
+        var searchInput = document.getElementById("searchInput");
+        var topicFilter = document.getElementById("topicFilter");
+
+        var activeDomain = null;
+        var activeTopic = null;
+        var activeConf = null;
+        var query = "";
+
+        function cardDomains(card) {
+          return (card.getAttribute("data-domains") || "").split(/\s+/).filter(Boolean);
+        }
+        function pluralize(n) {
+          return n + (n === 1 ? " note" : " notes");
+        }
+
+        // Domain counts + empty styling
+        domains.forEach(function (btn) {
+          var d = btn.getAttribute("data-domain");
+          var count = cards.filter(function (c) {
+            return cardDomains(c).indexOf(d) !== -1;
+          }).length;
+          var countEl = btn.querySelector(".domain-count");
+          if (countEl) countEl.textContent = count > 0 ? pluralize(count) : "No notes yet";
+          btn.classList.toggle("empty", count === 0);
+        });
+
+        // Build topic chips from the notes present
+        var topicChips = [];
+        (function buildTopics() {
+          if (!topicFilter) return;
+          var counts = {};
+          var seen = [];
+          cards.forEach(function (c) {
+            var t = c.getAttribute("data-topic") || "";
+            if (!t) return;
+            if (counts[t] === undefined) { counts[t] = 0; seen.push(t); }
+            counts[t]++;
+          });
+          seen.forEach(function (t) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "topic-chip";
+            btn.setAttribute("data-topic", t);
+            btn.setAttribute("aria-pressed", "false");
+            btn.innerHTML = t + ' <span class="topic-count">' + counts[t] + "</span>";
+            btn.addEventListener("click", function () {
+              activeTopic = activeTopic === t ? null : t;
+              applyFilter();
+            });
+            topicFilter.appendChild(btn);
+            topicChips.push(btn);
+          });
+        })();
+
+        function applyFilter() {
+          var visible = 0;
+          cards.forEach(function (card) {
+            var domainOk = !activeDomain || cardDomains(card).indexOf(activeDomain) !== -1;
+            var topicOk = !activeTopic || card.getAttribute("data-topic") === activeTopic;
+            var confOk = !activeConf || card.getAttribute("data-confidence") === activeConf;
+            var searchOk = !query || (card.getAttribute("data-search") || "").indexOf(query) !== -1;
+            var show = domainOk && topicOk && confOk && searchOk;
+            card.classList.toggle("hidden", !show);
+            if (show) visible++;
+          });
+          domains.forEach(function (btn) {
+            var on = btn.getAttribute("data-domain") === activeDomain;
+            btn.classList.toggle("active", on);
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
+          });
+          topicChips.forEach(function (btn) {
+            var on = btn.getAttribute("data-topic") === activeTopic;
+            btn.classList.toggle("active", on);
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
+          });
+          confBtns.forEach(function (btn) {
+            var on = btn.getAttribute("data-conf") === activeConf;
+            btn.classList.toggle("active", on);
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
+          });
+          var anyFilter = activeDomain || activeTopic || activeConf || query;
+          emptyState.classList.toggle("show", !!anyFilter && visible === 0);
+        }
+
+        domains.forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var d = btn.getAttribute("data-domain");
+            activeDomain = activeDomain === d ? null : d;
+            applyFilter();
+          });
+        });
+
+        confBtns.forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var c = btn.getAttribute("data-conf");
+            activeConf = activeConf === c ? null : c;
+            applyFilter();
+          });
+        });
+
+        if (searchInput) {
+          searchInput.addEventListener("input", function () {
+            query = searchInput.value.trim().toLowerCase();
+            applyFilter();
+          });
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener("click", function () {
+            activeDomain = null;
+            activeTopic = null;
+            activeConf = null;
+            query = "";
+            if (searchInput) searchInput.value = "";
+            applyFilter();
+          });
+        }
+
+        document.addEventListener("cardconfidencechange", applyFilter);
+
+        applyFilter();
+      })();
+    })();
+  </script>
+</body>
+</html>
