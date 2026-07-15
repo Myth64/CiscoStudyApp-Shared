@@ -1,10 +1,10 @@
 /* ============================================================
-   CCNP Study Hub - SAMPLE content (for sharing)
+   Cisco Study Hub - SAMPLE content (placeholder)
    This is a placeholder version of study-data.js with example
-   notes only. To share the tool without your personal material:
-     1. Copy the hub files EXCEPT study-data.js (and the .md notes).
-     2. Rename this file to study-data.js.
-   The recipient then replaces these samples with their own notes.
+   notes only, so the hub renders out-of-the-box. Replace these
+   with your own notes (and glossary terms) in study-data.js.
+
+   Keep this sample file as a reference/reset point.
    ============================================================ */
 (function () {
   "use strict";
@@ -14,11 +14,11 @@
       {
         id: "sample-note-one",
         title: "Sample Note \u2014 Replace Me",
-        topic: "Network Switching",
+        topic: "Sample Topic",
         file: "",
         domains: [1],
         badges: [
-          { code: "1.1.a", label: "Example objective", domain: 1 }
+          { code: "1.1", label: "Example objective", domain: 1 }
         ],
         tldr: "This is a placeholder card so the hub renders out-of-the-box. Edit study-data.js to add your own notes.",
         summary: "Replace this with a summary of your note. Text fields accept inline HTML, so you can use <strong>bold</strong> and dashes &mdash; like this. Each note becomes a card here, plus flashcards and cheat-sheet entries once those are filled in.",
@@ -41,34 +41,34 @@
 
       {
         id: "sample-note-two",
-        title: "Sample Note \u2014 Infrastructure",
-        topic: "Network Switching",
+        title: "Sample Note \u2014 Second Domain",
+        topic: "Sample Topic",
         file: "",
         domains: [3],
         badges: [
-          { code: "3.1.c", label: "Example STP objective", domain: 3 }
+          { code: "3.1", label: "Example objective", domain: 3 }
         ],
         tldr: "A second example so you can see the domain colors and filtering in action.",
-        summary: "Notes tagged to different domains get different accent colors, and the readiness bar is weighted by each domain's exam percentage.",
+        summary: "Notes tagged to different domains get different accent colors, and the domain/topic/confidence filters work across every page.",
         examFocus: [
-          { text: "<strong>Tip:</strong> tag each note with the domains it covers so filtering and progress work.", gotcha: false }
+          { text: "<strong>Tip:</strong> tag each note with the domains it covers so filtering works.", gotcha: false }
         ],
         takeaways: [
-          "Domains drive color + progress",
+          "Domains drive color + filtering",
           "Topics drive the topic filter"
         ],
         flashcards: [
-          { q: "Which table does a switch use to forward a frame?", a: "The MAC address table (CAM)." }
+          { q: "How do I add my own flashcards?", a: "Add q/a pairs to a note's flashcards array in study-data.js." }
         ],
         cli: [
-          { cmd: "show spanning-tree", desc: "Verify STP state and root bridge" }
+          { cmd: "show version", desc: "Example verification command" }
         ]
       }
     ],
 
     GLOSSARY: [
-      { term: "CAM", expansion: "Content-Addressable Memory", def: "The MAC address table used for Layer 2 forwarding decisions.", domains: [3] },
-      { term: "FHRP", expansion: "First Hop Redundancy Protocol", def: "Family of protocols (HSRP, VRRP, GLBP) providing a redundant default gateway.", domains: [1, 3] }
+      { term: "Example Term", expansion: "Example Expansion", def: "Replace with a real definition. Terms are indexed A-Z and filterable by domain.", domains: [1] },
+      { term: "Sample Acronym", expansion: "Sample Acronym Meaning", def: "Another placeholder entry so the glossary renders with content.", domains: [3] }
     ]
   };
 })();

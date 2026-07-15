@@ -1,7 +1,8 @@
 /* ============================================================
-   CCNP Study Hub - shared behavior
-   Theme toggle (persisted), top-nav active state + "soon" links,
-   and small shared helpers used across all hub pages.
+   Cisco Study Hub - shared behavior
+   Config-driven branding (header + page title), theme toggle
+   (persisted), top-nav active state + "soon" links, and small
+   shared helpers used across all hub pages.
    ============================================================ */
 (function () {
   "use strict";
@@ -48,7 +49,7 @@
 
     var stored = null;
     try {
-      stored = localStorage.getItem("ns-theme");
+      stored = localStorage.getItem("study-theme");
     } catch (e) {}
     if (stored === "dark" || stored === "light") {
       root.setAttribute("data-theme", stored);
@@ -60,7 +61,7 @@
         var next = isDark() ? "light" : "dark";
         root.setAttribute("data-theme", next);
         try {
-          localStorage.setItem("ns-theme", next);
+          localStorage.setItem("study-theme", next);
         } catch (e) {}
         updateIcon();
       });
@@ -71,6 +72,28 @@
         if (!root.getAttribute("data-theme")) updateIcon();
       });
     }
+  }
+
+  /* ---- Branding (from config) ----------------------------- */
+
+  // Human-readable label per page, used to build the <title>.
+  var PAGE_LABELS = {
+    notes: "Notes",
+    flashcards: "Flashcards",
+    cheatsheet: "Cheat Sheet",
+    glossary: "Glossary"
+  };
+
+  function initBranding() {
+    var cfg = (window.STUDY_CONFIG && window.STUDY_CONFIG.exam) || {};
+    var title = cfg.title || "Cisco Study Hub";
+
+    var headerTitle = document.querySelector(".header-title");
+    if (headerTitle) headerTitle.textContent = title;
+
+    var page = document.body.getAttribute("data-page");
+    var label = PAGE_LABELS[page];
+    document.title = label ? title + " \u00b7 " + label : title;
   }
 
   /* ---- Navigation ----------------------------------------- */
@@ -103,6 +126,7 @@
   }
 
   ready(function () {
+    initBranding();
     initTheme();
     initNav();
   });

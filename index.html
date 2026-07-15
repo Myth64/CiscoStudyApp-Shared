@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CCNP Study Hub &middot; Notes</title>
+<title>Cisco Study Hub &middot; Notes</title>
 <link rel="stylesheet" href="study.css" />
 </head>
 <body data-page="notes">
   <header class="site-header">
     <div class="header-inner">
-      <span class="header-title">CCNP &middot; ENCOR 350-401</span>
+      <span class="header-title">Cisco Study Hub</span>
       <nav class="site-nav" aria-label="Study hub sections">
-        <a class="nav-link" href="CCNP-Study.html" data-page="notes">Notes</a>
+        <a class="nav-link" href="index.html" data-page="notes">Notes</a>
         <a class="nav-link" href="Flashcards.html" data-page="flashcards">Flashcards</a>
         <a class="nav-link" href="Cheat-Sheet.html" data-page="cheatsheet">Cheat Sheet</a>
         <a class="nav-link" href="Glossary.html" data-page="glossary">Glossary</a>
@@ -22,10 +22,10 @@
 
   <main>
     <section class="hero">
-      <div class="hero-eyebrow">Implementing Cisco Enterprise Network Core Technologies</div>
-      <h1>CCNP &middot; ENCOR 350-401</h1>
-      <p>Exam-tailored study notes mapped to the ENCOR 350-401 v1.2 blueprint. The bar tracks the distinct exam objectives your notes cover.</p>
-      <div class="progress" aria-label="Exam study progress">
+      <div class="hero-eyebrow" id="heroEyebrow">Your personal study companion</div>
+      <h1 id="heroTitle">Cisco Study Hub</h1>
+      <p id="heroTagline">Add your notes and they appear here as searchable cards, with matching flashcards, cheat-sheet entries, and glossary terms.</p>
+      <div class="progress" id="progress" aria-label="Study progress">
         <div class="progress-top">
           <span class="progress-label">Exam readiness (weighted)</span>
           <span class="progress-pct" id="progressPct">0%</span>
@@ -33,15 +33,15 @@
         <div class="progress-track">
           <div class="progress-fill" id="progressFill"></div>
         </div>
-        <div class="progress-sub" id="progressSub">0 of 47 exam sub-topics studied</div>
+        <div class="progress-sub" id="progressSub"></div>
       </div>
     </section>
 
     <section class="blueprint" aria-label="Exam blueprint">
       <div class="blueprint-head">
-        <span class="blueprint-title">ENCOR 350-401 v1.2 &mdash; Exam Domains</span>
+        <span class="blueprint-title" id="blueprintTitle">Study Domains</span>
         <div class="blueprint-meta-col">
-          <span class="blueprint-meta">120 Minute Exam &middot; CCNP &amp; CCIE Enterprise</span>
+          <span class="blueprint-meta" id="blueprintMeta" hidden></span>
           <div class="conf-filter" id="confFilter" role="group" aria-label="Filter by confidence">
             <span class="conf-filter-label">Confidence</span>
             <button type="button" class="conf-filter-btn low" data-conf="low" aria-pressed="false">Low</button>
@@ -54,7 +54,7 @@
       <div class="domain-grid" id="domainGrid"></div>
       <div class="study-controls">
         <div class="search-wrap">
-          <input type="search" id="searchInput" class="search-input" placeholder="Search notes by keyword (e.g. TCAM, FHRP, SD-WAN)&hellip;" aria-label="Search notes" autocomplete="off" />
+          <input type="search" id="searchInput" class="search-input" placeholder="Search notes by keyword&hellip;" aria-label="Search notes" autocomplete="off" />
         </div>
         <div class="topic-filter" id="topicFilter" role="group" aria-label="Filter by topic">
           <span class="topic-filter-label">Topics</span>
@@ -70,7 +70,7 @@
     </div>
 
     <footer class="site-footer">
-      <p>CCNP notes, tailored to the ENCOR 350-401 v1.2 exam blueprint. Objective codes reference the official Cisco topic list.</p>
+      <p>A self-contained study hub. Edit <code>study-config.js</code> to name it for your exam and rename the domains; add notes in <code>study-data.js</code>.</p>
     </footer>
   </main>
 
@@ -100,8 +100,26 @@
         return (d.textContent || "").replace(/\s+/g, " ").trim();
       };
       var pad2 = util.pad2 || function (n) { return ("0" + n).slice(-2); };
+      var EXAM = CONFIG.exam || {};
 
-      /* ---- Render the exam-domain tiles from config ---------- */
+      /* ---- Hero + blueprint text from config ----------------- */
+      (function branding() {
+        function setText(id, value) {
+          var el = document.getElementById(id);
+          if (el && value) el.textContent = value;
+        }
+        setText("heroEyebrow", EXAM.eyebrow);
+        setText("heroTitle", EXAM.title);
+        setText("heroTagline", EXAM.tagline);
+        setText("blueprintTitle", EXAM.blueprint);
+        var meta = document.getElementById("blueprintMeta");
+        if (meta && EXAM.meta) {
+          meta.textContent = EXAM.meta;
+          meta.hidden = false;
+        }
+      })();
+
+      /* ---- Render the domain tiles from config --------------- */
       (function renderDomains() {
         var grid = document.getElementById("domainGrid");
         if (!grid) return;
@@ -109,9 +127,12 @@
         ORDER.forEach(function (d) {
           var dom = DOMAINS[d];
           if (!dom) return;
+          var weight = typeof dom.weight === "number"
+            ? '<span class="domain-weight">' + dom.weight + '%</span>'
+            : "";
           html +=
             '<button type="button" class="domain d' + dom.color + '" data-domain="' + d + '" aria-pressed="false">' +
-              '<span class="domain-weight">' + dom.weight + '%</span>' +
+              weight +
               '<span class="domain-name">' + dom.name + '</span>' +
               '<span class="domain-count"></span>' +
             "</button>";
@@ -155,7 +176,7 @@
             "</div>" +
             '<p class="summary">' + note.summary + "</p>" +
             '<div class="exam-focus">' +
-              '<div class="exam-focus-label">&#127919; Exam Focus &mdash; what 350-401 tests</div>' +
+              '<div class="exam-focus-label">&#127919; Exam Focus</div>' +
               "<ul>" + focus + "</ul>" +
             "</div>" +
             '<div class="takeaways-label">Key Takeaways</div>' +
@@ -179,13 +200,24 @@
         });
       })();
 
-      /* ---- Exam readiness: weighted by domain, from data ----- */
+      /* ---- Study readiness: weighted by domain, from data ---- */
+      /* Hidden unless the config defines an exam goal (domain     */
+      /* leaves). Add weights + leaves in study-config.js to show. */
       (function progress() {
+        var progressEl = document.getElementById("progress");
+        var hasGoal = Object.keys(DOMAINS).some(function (d) {
+          return Array.isArray(DOMAINS[d].leaves) && DOMAINS[d].leaves.length;
+        });
+        if (!hasGoal) {
+          if (progressEl) progressEl.hidden = true;
+          return;
+        }
+
         var leafSet = {};
         var parentMap = {};
         var totalLeaves = 0;
         Object.keys(DOMAINS).forEach(function (d) {
-          DOMAINS[d].leaves.forEach(function (leaf) {
+          (DOMAINS[d].leaves || []).forEach(function (leaf) {
             leafSet[leaf] = true;
             totalLeaves++;
             var parent = leaf.split(".").slice(0, 2).join(".");
@@ -209,9 +241,10 @@
 
         var weighted = 0;
         Object.keys(DOMAINS).forEach(function (d) {
-          var leaves = DOMAINS[d].leaves;
+          var leaves = DOMAINS[d].leaves || [];
+          if (!leaves.length) return;
           var have = leaves.filter(function (l) { return covered[l]; }).length;
-          weighted += DOMAINS[d].weight * (have / leaves.length);
+          weighted += (DOMAINS[d].weight || 0) * (have / leaves.length);
         });
 
         var pct = Math.min(100, Math.round(weighted));
@@ -232,7 +265,7 @@
 
       /* ---- Per-note confidence (Low / Med / High), saved ----- */
       (function confidence() {
-        var STORE = "ns-confidence";
+        var STORE = "study-confidence";
         var saved = {};
         try {
           saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {};
